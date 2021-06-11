@@ -1,0 +1,80 @@
+---
+title: "Police-Complaints2"
+author: "Tejas Mundhe"
+date: "6/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+```{r, include=FALSE}
+raw_data_ph <- read_csv("https://raw.githubusercontent.com/Financial-Times/police-misconduct-complaints-analysis/main/output/philly_clean.csv") %>% 
+  select(officer_id) 
+
+raw_data_ny <- read_csv("https://raw.githubusercontent.com/Financial-Times/police-misconduct-complaints-analysis/main/output/nyc_clean.csv") %>%
+  select(OfficerID)
+
+raw_data_ch <- read_csv("https://raw.githubusercontent.com/Financial-Times/police-misconduct-complaints-analysis/main/output/chicago_clean.csv") %>%
+  select(UID)
+```
+```{r, echo = FALSE}
+clean_data_ny <- raw_data_ny %>%
+  group_by(OfficerID) %>%
+  summarize(total = n()) %>%
+  
+  mutate(compl_decile = ntile(total, 10)) %>%
+  group_by(compl_decile) %>%
+  summarize(compl_total = sum(total)) %>%
+  mutate(compl_perc = compl_total / sum(compl_total)) %>% 
+  select(compl_decile, compl_perc) %>%
+  mutate(city = "New York")
+  
+clean_data_ch <- raw_data_ch %>%
+  group_by(UID) %>%
+  summarize(total = n()) %>%
+  
+  mutate(compl_decile = ntile(total, 10)) %>%
+  group_by(compl_decile) %>%
+  summarize(compl_total = sum(total)) %>%
+  mutate(compl_perc = compl_total / sum(compl_total)) %>% 
+  select(compl_decile, compl_perc) %>%
+  mutate(city = "Chicago")
+  
+  
+clean_data_ph <- raw_data_ph %>%
+  group_by(officer_id) %>%
+  summarize(total = n()) %>%
+  
+  mutate(compl_decile = ntile(total, 10)) %>%
+  group_by(compl_decile) %>%
+  summarize(compl_total = sum(total)) %>%
+  mutate(compl_perc = compl_total / sum(compl_total)) %>% 
+  select(compl_decile, compl_perc) %>%
+  mutate(city = "Philidalphia")
+  
+  
+```
+```{r, echo = FALSE}
+clean_data <- bind_rows(clean_data_ph, clean_data_ny, clean_data_ch)
+```
+```{r, echo = FALSE}
+clean_data %>%
+ ggplot(aes(x = compl_decile, y = compl_perc, fill = compl_decile)) +
+    geom_col()+
+    facet_wrap(~ city, nrow = 1)+
+    labs(title = "Distribution of Police Complaints in Three U.S Cities",
+         subtitle = "In every city, a tenth of officers get a third of the complaints",
+         x = "Complaint Decile",
+         y = NULL,
+         fill = "Decile",
+         caption = "Data from Financial Times") +
+    scale_x_continuous(breaks = 1:10) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1))
+    
+```
+
+
+
+
